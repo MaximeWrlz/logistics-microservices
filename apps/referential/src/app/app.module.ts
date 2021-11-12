@@ -4,19 +4,16 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PingController } from './ping/ping.controller';
-import { RefModule } from '@log/ref';
+import { StockController } from './stock/stock.controller';
 import { environment } from '../environments/environment';
-import { ClientsModule } from '@log/clients';
-import { SupplyModule } from '@log/supply';
+import { Stock, StockSchema } from './entities/stock';
 
 @Module({
   imports: [
     MongooseModule.forRoot(environment.mongoUrl),
-    RefModule,
-    ClientsModule,
-    SupplyModule,
+    MongooseModule.forFeature([{ name: Stock.name, schema: StockSchema }])
   ],
-  controllers: [AppController, PingController],
+  controllers: [AppController, PingController, StockController],
   providers: [AppService],
 })
 export class AppModule {}

@@ -14,3 +14,4 @@ export interface StockProductDto {
   productId: string;
   quantity: number;
 }
+
