@@ -14,14 +14,14 @@ export class SupplyRequestController {
     private supplyRequestDocumentModel: Model<SupplyRequestDocument>
   ) {}
 
-  @Post()
-  public async add(@Body() supplyRequest: SupplyRequestDto): Promise<void> {
-    const newRequest = new this.supplyRequestDocumentModel(supplyRequest);
-    await newRequest.save();
-  }
+  // @Post()
+  // public async add(@Body() supplyRequest: SupplyRequestDto): Promise<void> {
+  //   const newRequest = new this.supplyRequestDocumentModel(supplyRequest);
+  //   await newRequest.save();
+  // }
 
-  @Get()
-  public async getAll(): Promise<SupplyRequestDto[]> {
-    return await this.supplyRequestDocumentModel.find().exec();
-  }
+  // @Get()
+  // public async getAll(): Promise<SupplyRequestDto[]> {
+  //   return await this.supplyRequestDocumentModel.find().exec();
+  // }
 }

@@ -9,14 +9,14 @@ export class ClientOrdersController {
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>
   ) {}
 
-  @Post(':id')
-  public async add(@Param('id') id: string): Promise<void> {
-    const doc = new this.orderModel({ reference: id });
-    await doc.save();
-  }
+  // @Post(':id')
+  // public async add(@Param('id') id: string): Promise<void> {
+  //   const doc = new this.orderModel({ reference: id });
+  //   await doc.save();
+  // }
 
-  @Get()
-  public async getAll(): Promise<{ reference: string }[]> {
-    return await this.orderModel.find().exec();
-  }
+  // @Get()
+  // public async getAll(): Promise<{ reference: string }[]> {
+  //   return await this.orderModel.find().exec();
+  // }
 }
