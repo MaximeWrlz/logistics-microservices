@@ -18,30 +18,36 @@ export class StockController {
     const allProductsFromDb = await this.stockModel.find().exec();
     return allProductsFromDb.map(p => ({productId: p.productId, quantity: p.available}));
   }
-  
-  // @Get('products') 
-  // @ApiOperation({ summary: "call all stocks"})
-  // public async stocks(): Promise<StockDto> {
-  //   return this.stockModel.find().exec();
-  // }
 
-  // @Get('products/:id')
-  // @ApiOperation({ summary: "Get on product by his id"})
-  // public async findOne(@Param('id') id: string): Promise<StockDto> {
-  //   return await this.stockModel.findById(id).exec();
-  // }
 
   @Post(":id/movement")
-  public async updateStock(@Param('id') id: string, @Body() stockMovement: StockMovementDto) {
+  public async updateStock(@Param('id') id: string, @Body() stockMovement: StockMovementDto, res) {
     // We assume we already know the product in catalog
-    // We assume also that stockMovement.type == Supply
 
     const existingStock = await this.stockModel.findOne({productId: id}).exec();
-    if (existingStock) {
-      console.log('Found the product');
-      existingStock.available += stockMovement.quantity
-      await existingStock.save();
-    } else {
+    if (existingStock && stockMovement.status === 'Supply') {
+      console.log('Found the product');      
+      existingStock.available += stockMovement.quantity;
+      await existingStock.save();      
+    } else if (existingStock && stockMovement.status === 'Reserve') {
+      if (stockMovement.quantity > existingStock.available) {
+        return {
+          "status_code": 400,
+          "message": "Il n'y a plus assez de stock sur ce produit !",
+          "data": existingStock.available + " produits restants"
+        };
+      } else {
+        console.log('Reserved the product');
+        existingStock.available -= stockMovement.quantity;
+        existingStock.reserved += stockMovement.quantity;
+        await existingStock.save();
+        return {
+          "status_code": 204,
+          "message": "Produits réservés.",
+          "data": existingStock.available + " produits restants",
+        };
+      }
+    } else { 
       console.log('Did not find the product, adding it', stockMovement);
       const newObject = new this.stockModel({productId: id, available: stockMovement.quantity, reserved: 0} as Stock)
       await newObject.save();
