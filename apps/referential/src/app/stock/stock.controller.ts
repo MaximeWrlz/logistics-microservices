@@ -3,10 +3,12 @@ import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { StockMovementDto, StockProductDto } from '@log/contracts';
+import { lastValueFrom, map } from 'rxjs';
+import { HttpService } from '@nestjs/axios';
 
 @Controller('stock')
 export class StockController {
-  constructor (@InjectModel(Stock.name) private stockModel: Model<Stock>) {}
+  constructor (@InjectModel(Stock.name) private stockModel: Model<Stock>, private readonly http: HttpService) {}
 
   @Get()
   public async stock(): Promise<StockProductDto[]> {
@@ -16,12 +18,9 @@ export class StockController {
 
 
   @Post(":id/movement")
-  public async updateStock(@Param('id') id: string, @Body() stockMovement: StockMovementDto, res) {
-    // We assume we already know the product in catalog
-
+  public async updateStock(@Param('id') id: string, @Body() stockMovement: StockMovementDto) {
     const existingStock = await this.stockModel.findOne({productId: id}).exec();
-    if (existingStock && stockMovement.status === 'Supply') {
-      console.log('Found the product');      
+    if (existingStock && stockMovement.status === 'Supply') {   
       existingStock.available += stockMovement.quantity;
       await existingStock.save();      
     } else if (existingStock && stockMovement.status === 'Reserve') {
@@ -32,14 +31,22 @@ export class StockController {
           "data": existingStock.available + " produits disponibles restants."
         };
       } else {
-        console.log('Reserved the product');
         existingStock.available -= stockMovement.quantity;
         existingStock.reserved += stockMovement.quantity;
         await existingStock.save();
+        if (existingStock.available == 0) {
+          const res = await lastValueFrom(this.http.get(`https://fhemery-logistics.herokuapp.com/api/products/${existingStock.productId}`).pipe(
+            map(resp => resp.data)
+          ));
+          const data = {
+            ean: res.ean
+          }
+          this.http.post(`https://fhemery-logistics.herokuapp.com/api/supply-request`, data);
+        }
         return {
           "status_code": 204,
           "message": "Produits réservés.",
-          "data": existingStock.available + " produits disponibles restants",
+          "data": existingStock.available + " produits disponibles restants"
         };
       }
     } else if (existingStock && stockMovement.status === 'Removal') {
