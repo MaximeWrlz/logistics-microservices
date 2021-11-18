@@ -1,13 +1,8 @@
-import { Stock, StockDocument } from '../entities/stock';
+import { Stock } from '../entities/stock';
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ApiOperation } from '@nestjs/swagger';
-import { StockDto } from '../dtos';
 import { StockMovementDto, StockProductDto } from '@log/contracts';
-
-
-// c la mer noire ce fichier
 
 @Controller('stock')
 export class StockController {
@@ -16,7 +11,7 @@ export class StockController {
   @Get()
   public async stock(): Promise<StockProductDto[]> {
     const allProductsFromDb = await this.stockModel.find().exec();
-    return allProductsFromDb.map(p => ({productId: p.productId, quantity: p.available}));
+    return allProductsFromDb.map(p => ({productId: p.productId, quantity: p.available, reserved: p.reserved}));
   }
 
 
@@ -34,7 +29,7 @@ export class StockController {
         return {
           "status_code": 400,
           "message": "Il n'y a plus assez de stock sur ce produit !",
-          "data": existingStock.available + " produits restants"
+          "data": existingStock.available + " produits disponibles restants."
         };
       } else {
         console.log('Reserved the product');
@@ -44,7 +39,22 @@ export class StockController {
         return {
           "status_code": 204,
           "message": "Produits réservés.",
-          "data": existingStock.available + " produits restants",
+          "data": existingStock.available + " produits disponibles restants",
+        };
+      }
+    } else if (existingStock && stockMovement.status === 'Removal') {
+      if (stockMovement.quantity > existingStock.reserved) {
+        return {
+          "status_code": 400,
+          "message": "Le stock de produits reservés n'est pas suffisant !",
+          "data": existingStock.reserved + " produits reservés restants."
+        };
+      } else {
+        existingStock.reserved -= stockMovement.quantity;
+        await existingStock.save();
+        return {
+          "status_code": 204,
+          "message": "Produits envoyé à la livraison.",
         };
       }
     } else { 
